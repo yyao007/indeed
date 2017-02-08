@@ -75,7 +75,7 @@ HTTP_PROXY = 'http://127.0.0.1:8123'
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
    'indeed.middlewares.RandomUserAgentMiddleware': 543,
-   'indeed.middlewares.ProxyMiddleware': 550,
+   # 'indeed.middlewares.ProxyMiddleware': 550,
    # 'indeed.middlewares.ChangeProxyMiddleware': 1000,
    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
 }
