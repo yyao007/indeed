@@ -12,6 +12,8 @@ from sqlalchemy.types import CHAR, Integer, String, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.mysql import INTEGER
 from sqlalchemy.ext.declarative import declarative_base
+from stem import Signal
+from stem.control import Controller
 
 Base = declarative_base()
 class Resumes(Base):
@@ -66,6 +68,8 @@ class IndeedPipeline(object):
         self.count += 1
         if self.count % 100 == 0:
             self.session.commit()
+        if self.count % 150 == 0:
+            self.new_circuit()
             
         resume = self.create_resume(item)
         self.session.add(resume)
@@ -110,34 +114,48 @@ class IndeedPipeline(object):
 
     def create_jobs(self, item, rid):
         job_titles = item.get('job_titles', [])
+        titles_seen = set()
         jobs = []
         for t in job_titles:
-            jobs.append(Jobs(rid=rid, title=t, amount=job_titles[t]))
-            
+            if t not in titles_seen:
+                titles_seen.add(t)
+                jobs.append(Jobs(rid=rid, title=t, amount=job_titles[t]))
+            else:
+                print 'Duplicate job title found:', t
         return jobs
         
     def create_companies(self, item, rid):
         company = item.get('company', [])
+        companies_seen = set()
         companies = []
         for c in company:
-            companies.append(Companies(rid=rid, name=c, amount=company[c]))
-        
+            if c not in companies_seen:
+                companies_seen.add(c)
+                companies.append(Companies(rid=rid, name=c, amount=company[c]))
+            else:
+                print 'Duplicate company found:', c
         return companies
-        
+    
+    def new_circuit(self):
+        with Controller.from_port(port = 9151) as controller:
+            print 'Changeing IP...',
+            controller.authenticate('931005')
+            controller.signal(Signal.NEWNYM)
+            print 'Done!' 
         
 class DuplicatesPipeline(object):
-	def __init__(self):
-		self.cities = set()
-		
-	def process_item(self, item, spider):
-		city = (item.get('city'), item.get('state'))
-		if city in self.cities:
-			raise DropItem("Duplicate item found: %s" % str(city))
-		else:
-			self.cities.add(city)
-			return item
-		
-		
+    def __init__(self):
+        self.cities = set()
+        
+    def process_item(self, item, spider):
+        city = (item.get('city'), item.get('state'))
+        if city in self.cities:
+            raise DropItem("Duplicate item found: %s" % str(city))
+        else:
+            self.cities.add(city)
+            return item
+        
+        
         
         
         

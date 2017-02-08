@@ -6,9 +6,13 @@
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+from scrapy.http import TextResponse
 import random
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.conf import settings
+from stem import Signal
+from stem.control import Controller
 
 class RandomUserAgentMiddleware(object):
 	def process_request(self, request, spider):
@@ -21,6 +25,26 @@ class ProxyMiddleware(object):
     def process_request(self, request, spider):
         request.meta['proxy'] = settings.get('HTTP_PROXY')
 			
+
+class ChangeProxyMiddleware(RetryMiddleware):
+	def process_response(self, request, response, spider):
+		t = TextResponse(request.url)
+		footer = t.xpath('//p[@id="footer_nav_sec"]')
+		print t
+		if not footer:
+			reason = 'IP is banned. Create a new Tor Circuit and retry.'
+			self.new_circuit()
+			return self._retry(request, reason, spider)
+		else:
+			return response
+		
+	def new_circuit(self):
+		with Controller.from_port(port = 9151) as controller:
+			controller.authenticate('931005')
+			controller.signal(Signal.NEWNYM)
+			print 'Done!'
+	
+
 			
 class IndeedDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
