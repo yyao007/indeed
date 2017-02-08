@@ -83,7 +83,7 @@ class ResumeSpider(scrapy.Spider):
 		exist = session.execute("SELECT DISTINCT(state) FROM resumes").fetchall()
 		exist = [i[0] for i in exist]
 		# not_complete = 'select t1.cities, t2.cities, t1.state from (select count(distinct(name)) cities, state from city group by state order by state) as t1 left join (select count(*) cities, state from resumes group by state) as t2 on t1.state=t2.state where t2.cities is not NULL and t1.cities!=t2.cities'
-		states = ['TX', 'OK']
+		states = ['AR', 'MA']
 		stateStr = ''
 		for i, s in enumerate(states):
 			stateStr += 'state=\'' + s + '\''
