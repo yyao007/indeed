@@ -36,22 +36,22 @@ class Resumes(Base):
     crawl_time = Column(DateTime(timezone=True), server_default=func.now())
 
 class Jobs(Base):
-    __tablename__ = 'jobs'
+    __tablename__ = 'resumeJobs'
     
     rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
-    title = Column(String(1000), primary_key=True)
+    title = Column(String(767), primary_key=True)
     amount = Column(INTEGER(unsigned=True))
     
 class Companies(Base):
-    __tablename__ = 'companies'
+    __tablename__ = 'resumeCompanies'
     
     rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
-    name = Column(String(1000), primary_key=True)
+    name = Column(String(767), primary_key=True)
     amount = Column(INTEGER(unsigned=True))
     
 class IndeedPipeline(object):
     def open_spider(self, spider):
-        connStr = 'mysql+mysqldb://root:931005@127.0.0.1/us'
+        connStr = 'mysql+mysqldb://root:home123@127.0.0.1/business'
         self.engine = create_engine(connStr, convert_unicode=True, echo=False)
         self.DB_session = sessionmaker(bind=self.engine)
         self.session = self.DB_session()

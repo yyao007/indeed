@@ -76,7 +76,7 @@ class ResumeSpider(scrapy.Spider):
 	
 	def getUrl(self):
 		urls = []
-		connStr = 'mysql+mysqldb://root:931005@127.0.0.1/us'
+		connStr = 'mysql+mysqldb://root:home123@127.0.0.1/business'
 		engine = create_engine(connStr, echo=False)
 		DB_session = sessionmaker(bind=engine)
 		session = DB_session()
