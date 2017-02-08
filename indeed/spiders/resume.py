@@ -81,9 +81,17 @@ class ResumeSpider(scrapy.Spider):
 		DB_session = sessionmaker(bind=engine)
 		session = DB_session()
 		exist = session.execute("SELECT DISTINCT(state) FROM resumes").fetchall()
-		exist = [i[0] for i in exist]
-		result = session.execute("SELECT DISTINCT(Name), State FROM city").fetchall()
-		# result = session.execute("select distinct(t1.name), t1.state from (select distinct(name), state from city where state='GU') as t1 left join resumes on (resumes.city=t1.name) where resumes.city is NULL").fetchall()
+                exist = [i[0] for i in exist]
+                # not_complete = 'select t1.cities, t2.cities, t1.state from (select count(distinct(name)) cities, state from city group by state order by state) as t1 left join (select count(*) cities, state from resumes group by state) as t2 on t1.state=t2.state where t2.cities is not NULL and t1.cities!=t2.cities'
+                states = ['AR', 'MA']
+                stateStr = ''
+                for i, s in enumerate(states):
+                        stateStr += 'state=\'' + s + '\''
+                        if i < len(states)-1:
+                                stateStr += ' or '
+
+                # result = session.execute("select t1.name, t1.state from (select distinct(name), state from city where %s) as t1 left join resumes as t2 on (t1.name=t2.city and t1.state=t2.state) where t2.city is NULL" %(stateStr)).fetchall()
+                result = session.execute("SELECT DISTINCT(Name), State FROM city").fetchall()
 		for city, state in result:
 			if state not in exist:
 				yield 'https://www.indeed.com/resumes?q=any&l='+ city.replace(' ', '+') +'%2C+'+ state + '&co=US&radius=0'

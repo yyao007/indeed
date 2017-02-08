@@ -117,8 +117,8 @@ class IndeedPipeline(object):
         titles_seen = set()
         jobs = []
         for t in job_titles:
-            if t not in titles_seen:
-                titles_seen.add(t)
+            if t.lower() not in titles_seen:
+                titles_seen.add(t.lower())
                 jobs.append(Jobs(rid=rid, title=t, amount=job_titles[t]))
             else:
                 print 'Duplicate job title found:', t
@@ -129,8 +129,8 @@ class IndeedPipeline(object):
         companies_seen = set()
         companies = []
         for c in company:
-            if c not in companies_seen:
-                companies_seen.add(c)
+            if c.lower() not in companies_seen:
+                companies_seen.add(c.lower())
                 companies.append(Companies(rid=rid, name=c, amount=company[c]))
             else:
                 print 'Duplicate company found:', c
