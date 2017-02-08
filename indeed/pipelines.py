@@ -68,8 +68,8 @@ class IndeedPipeline(object):
         self.count += 1
         if self.count % 100 == 0:
             self.session.commit()
-        if self.count % 150 == 0:
-            self.new_circuit()
+        # if self.count % 150 == 0:
+            # self.new_circuit()
             
         resume = self.create_resume(item)
         self.session.add(resume)

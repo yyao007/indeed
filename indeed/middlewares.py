@@ -26,23 +26,16 @@ class ProxyMiddleware(object):
         request.meta['proxy'] = settings.get('HTTP_PROXY')
 			
 
-class ChangeProxyMiddleware(RetryMiddleware):
-	def process_response(self, request, response, spider):
-		t = TextResponse(request.url)
-		footer = t.xpath('//p[@id="footer_nav_sec"]')
-		print t
-		if not footer:
-			reason = 'IP is banned. Create a new Tor Circuit and retry.'
-			self.new_circuit()
-			return self._retry(request, reason, spider)
-		else:
-			return response
+class ChangeProxyMiddleware(object):
+	def __init__(self):
+		self.controller = Controller.from_port(port = 9151)
+		self.controller.authenticate('931005')
 		
-	def new_circuit(self):
-		with Controller.from_port(port = 9151) as controller:
-			controller.authenticate('931005')
-			controller.signal(Signal.NEWNYM)
-			print 'Done!'
+	def process_request(self, request, spider):
+		self.new_circuit()
+		
+	def new_circuit(self):		
+		self.controller.signal(Signal.NEWNYM)
 	
 
 			
