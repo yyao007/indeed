@@ -13,39 +13,38 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.conf import settings
 from stem import Signal
 from stem.control import Controller
+import stem.process
+from stem.util import term
 
 class RandomUserAgentMiddleware(object):
-	def process_request(self, request, spider):
-		ua = random.choice(settings.get('USER_AGENT_LIST'))
-		if ua:
-			# print 'User-Agent: ', ua
-			request.headers.setdefault('User-Agent', ua)
+    def process_request(self, request, spider):
+        ua = random.choice(settings.get('USER_AGENT_LIST'))
+        if ua:
+            # print 'User-Agent: ', ua
+            request.headers.setdefault('User-Agent', ua)
 
 class ProxyMiddleware(object):
     def process_request(self, request, spider):
         request.meta['proxy'] = settings.get('HTTP_PROXY')
-			
+            
 
-class ChangeProxyMiddleware(RetryMiddleware):
-	def process_response(self, request, response, spider):
-		t = TextResponse(request.url)
-		footer = t.xpath('//p[@id="footer_nav_sec"]')
-		print t
-		if not footer:
-			reason = 'IP is banned. Create a new Tor Circuit and retry.'
-			self.new_circuit()
-			return self._retry(request, reason, spider)
-		else:
-			return response
-		
-	def new_circuit(self):
-		with Controller.from_port(port = 9151) as controller:
-			controller.authenticate('931005')
-			controller.signal(Signal.NEWNYM)
-			print 'Done!'
-	
+class ChangeProxyMiddleware(object):
+    def __init__(self):
+        self.count = 0
+        self.controller = Controller.from_port(port = 9151)
+        self.controller.authenticate('931005')
+        
+    def process_request(self, request, spider):
+        self.count += 1
+        if self.count % 10 == 0:
+            print "Change circuit every 10 requests..."
+        self.new_circuit()
+        
+    def new_circuit(self):      
+        self.controller.signal(Signal.NEWNYM)
+    
 
-			
+            
 class IndeedDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
