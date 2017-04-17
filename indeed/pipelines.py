@@ -17,37 +17,44 @@ from stem.control import Controller
 
 Base = declarative_base()
 class Resumes(Base):
-    __tablename__ = 'resumes'
+    __tablename__ = 'resume'
     
-    id = Column(Integer, primary_key=True)
-    city = Column(String(50))
-    state = Column(String(2))
+    # id = Column(Integer, primary_key=True)
+    city = Column(String(50), primary_key=True)
+    state = Column(String(2), primary_key=True)
+    crawl_time = Column(DateTime(timezone=True), primary_key=True, server_default=func.now())
     total = Column(INTEGER(unsigned=True))
-    y0_1 = Column(INTEGER(unsigned=True))
-    y1_2 = Column(INTEGER(unsigned=True))
-    y3_5 = Column(INTEGER(unsigned=True))
-    y6_10 = Column(INTEGER(unsigned=True))
-    y10_ = Column(INTEGER(unsigned=True))
-    doctor = Column(INTEGER(unsigned=True))
-    master = Column(INTEGER(unsigned=True))
-    bachelor = Column(INTEGER(unsigned=True))
-    associate = Column(INTEGER(unsigned=True))
-    diploma = Column(INTEGER(unsigned=True))
-    crawl_time = Column(DateTime(timezone=True), server_default=func.now())
+    y0_1 = Column(INTEGER)
+    y1_2 = Column(INTEGER)
+    y3_5 = Column(INTEGER)
+    y6_10 = Column(INTEGER)
+    y10_ = Column(INTEGER)
+    doctor = Column(INTEGER)
+    master = Column(INTEGER)
+    bachelor = Column(INTEGER)
+    associate = Column(INTEGER)
+    diploma = Column(INTEGER)
+    
 
 class Jobs(Base):
-    __tablename__ = 'jobs'
+    __tablename__ = 'resumeJobs'
     
-    rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
-    title = Column(String(1000), primary_key=True)
-    amount = Column(INTEGER(unsigned=True))
+    # rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
+    city = Column(String(50), primary_key=True)
+    state = Column(String(2), primary_key=True)
+    crawl_time = Column(DateTime(timezone=True), primary_key=True, server_default=func.now())
+    jobTitle = Column(String(500), primary_key=True)
+    jobCount = Column(INTEGER(unsigned=True))
     
 class Companies(Base):
-    __tablename__ = 'companies'
+    __tablename__ = 'resumeCompanies'
     
-    rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
-    name = Column(String(1000), primary_key=True)
-    amount = Column(INTEGER(unsigned=True))
+    # rid = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), primary_key=True)
+    city = Column(String(50), primary_key=True)
+    state = Column(String(2), primary_key=True)
+    crawl_time = Column(DateTime(timezone=True), primary_key=True, server_default=func.now())
+    companyName = Column(String(500), primary_key=True)
+    companyCount = Column(INTEGER(unsigned=True))
     
 class IndeedPipeline(object):
     def open_spider(self, spider):
@@ -65,22 +72,24 @@ class IndeedPipeline(object):
     
     def process_item(self, item, spider):
         # Commit session every 100 items
-        self.count += 1
-        if self.count % 100 == 0:
-            self.session.commit()
+        # self.count += 1
+            
         # if self.count % 150 == 0:
             # self.new_circuit()
-            
         resume = self.create_resume(item)
+        jobs = self.create_jobs(item, resume.city, resume.state)
+        companies = self.create_companies(item, resume.city, resume.state)
+        # try:
         self.session.add(resume)
-        self.session.flush()
-        jobs = self.create_jobs(item, resume.id)
-        companies = self.create_companies(item, resume.id)
         self.session.add_all(jobs + companies)
-        self.session.flush()
-        
-        return item
-        
+        self.session.commit()
+        # # except:
+            # raise
+            # self.session.rollback()
+            # print "rollback..."   
+        # finally:
+        return item     
+
     def create_resume(self, item):
         resume = Resumes(city=item.get('city'), state=item.get('state'), total=item.get('total'))
         work_experience = item.get('work_experience', [])
@@ -112,28 +121,34 @@ class IndeedPipeline(object):
         
         return resume
 
-    def create_jobs(self, item, rid):
+    def create_jobs(self, item, c, s):
         job_titles = item.get('job_titles', [])
         titles_seen = set()
         jobs = []
         for t in job_titles:
             if t.lower() not in titles_seen:
+                if len(t) > 500:
+                    print 'Job title too long: ', t
+                    continue   
                 titles_seen.add(t.lower())
-                jobs.append(Jobs(rid=rid, title=t, amount=job_titles[t]))
+                jobs.append(Jobs(city=c, state=s, jobTitle=t, jobCount=job_titles[t]))
             else:
-                print 'Duplicate job title found:', t				
+                print 'Duplicate job title found:', t               
         return jobs
         
-    def create_companies(self, item, rid):
+    def create_companies(self, item, c, s):
         company = item.get('company', [])
         companies_seen = set()
         companies = []
-        for c in company:
-            if c.lower() not in companies_seen:
-                companies_seen.add(c.lower())
-                companies.append(Companies(rid=rid, name=c, amount=company[c]))
+        for comp in company:
+            if comp.lower() not in companies_seen: 
+                if len(comp) > 500:
+                    print 'Compny name too long: ', comp
+                    continue
+                companies_seen.add(comp.lower())
+                companies.append(Companies(city=c, state=s, companyName=comp, companyCount=company[comp]))
             else:
-                print 'Duplicate company found:', c
+                print 'Duplicate company found:', comp
         return companies
     
     def new_circuit(self):

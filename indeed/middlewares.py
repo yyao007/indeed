@@ -13,32 +13,38 @@ from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.conf import settings
 from stem import Signal
 from stem.control import Controller
+import stem.process
+from stem.util import term
 
 class RandomUserAgentMiddleware(object):
-	def process_request(self, request, spider):
-		ua = random.choice(settings.get('USER_AGENT_LIST'))
-		if ua:
-			# print 'User-Agent: ', ua
-			request.headers.setdefault('User-Agent', ua)
+    def process_request(self, request, spider):
+        ua = random.choice(settings.get('USER_AGENT_LIST'))
+        if ua:
+            # print 'User-Agent: ', ua
+            request.headers.setdefault('User-Agent', ua)
 
 class ProxyMiddleware(object):
     def process_request(self, request, spider):
         request.meta['proxy'] = settings.get('HTTP_PROXY')
-			
+            
 
 class ChangeProxyMiddleware(object):
-	def __init__(self):
-		self.controller = Controller.from_port(port = 9151)
-		self.controller.authenticate('931005')
-		
-	def process_request(self, request, spider):
-		self.new_circuit()
-		
-	def new_circuit(self):		
-		self.controller.signal(Signal.NEWNYM)
-	
+    def __init__(self):
+        self.count = 0
+        self.controller = Controller.from_port(port = 9151)
+        self.controller.authenticate('931005')
+        
+    def process_request(self, request, spider):
+        self.count += 1
+        if self.count % 10 == 0:
+            print "Change circuit every 100 requests..."
+        self.new_circuit()
+        
+    def new_circuit(self):      
+        self.controller.signal(Signal.NEWNYM)
+    
 
-			
+            
 class IndeedDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
